@@ -1,5 +1,7 @@
 # Terminal Whisperer: A Friendly Guide for Terminal Newbies
 
+[🔗 Repository: termoil](https://github.com/ipriyam26/termoil)
+
 As a self-proclaimed terminal enthusiast, I've always believed that the terminal is the most efficient and direct way to communicate with any system. But I've noticed that many new developers treat the terminal like it's a haunted mansion, avoiding it at all costs.
 
 To bridge this gap, I had a brilliant idea 💡: What if there was a tool that could magically translate your intentions into terminal commands? With the advancements in language models like GPT-3.5, this dream could become a reality!
