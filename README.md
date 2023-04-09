@@ -1,4 +1,4 @@
-# Termoil: A Friendly Guide for Terminal Newbies
+# Termoil: A Chatty Assistant for Conquering the Terminal
 
 [🔗 Repository: termoil](https://github.com/ipriyam26/termoil)
 
