@@ -1,4 +1,4 @@
-# Terminal Whisperer: A Friendly Guide for Terminal Newbies
+# Termoil: A Friendly Guide for Terminal Newbies
 
 [🔗 Repository: termoil](https://github.com/ipriyam26/termoil)
 
