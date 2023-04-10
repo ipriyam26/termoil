@@ -1,6 +1,18 @@
-//NOTE - So for making a command line tool the first thing I need is, for a way to take user input, upon a little reasearch I found that I can use the std library to do that.
+//NOTE - even though std library option is good enough its not the best for CLI apps and lot of things will have to be done manually so we will be using a cargo crate called clap
+
+use clap::Parser;
+
+
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    // query the user wants to enter
+    #[arg(short, long)]
+    query: String,
+}
+
 
 fn main(){
-    let arguments = std::env::args().collect::<Vec<String>>();
-    println!("{:?}", arguments);
+    let arguments = Args::parse();
+    println!("Query: {:?}", arguments.query);
 }
