@@ -17,7 +17,7 @@ struct Args {
 
 //NOTE - Explain what is #[tokio::main] and why we need it
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn Error>> {
     let arguments = Args::parse();
     let url = format!(
         "https://api.dictionaryapi.dev/api/v2/entries/en/{}",
@@ -27,21 +27,18 @@ async fn main() {
     let results= b.json().await.expect("Error while parsing json");
 
     println!("{:?}", results);
-  
+    Ok(())
     // println!("Query: {:?}", arguments.query);
 }
 
-//Error -
-
-// error[E0277]: the `?` operator can only be used in an async block that returns `Result` or `Option` (or another type that implements `FromResidual`)
-//   --> src/main.rs:26:36
+// Error -
+// error[E0698]: type inside `async` block must be known in this context
+//   --> src/main.rs:27:20
 //    |
-// 19 | #[tokio::main]
-//    | -------------- this function should return `Result` or `Option` to accept `?`
-// ...
-// 26 |     let b = reqwest::get(url).await?;
-//    |                                    ^ cannot use the `?` operator in an async block that returns `()`
+// 27 |     let results= b.json().await.expect("Error while parsing json");
+//    |                    ^^^^ cannot infer type for type parameter `T` declared on the associated function `json`
 //    |
-//    = help: the trait `FromResidual<Result<Infallible, reqwest::Error>>` is not implemented for `()`
-
-// For more information about this error, try `rustc --explain E0277`.
+// note: the type is part of the `async` block because of this `await`
+//   --> src/main.rs:27:26
+//    |
+// 27 |     let results= b.json().await.expect("Error while parsing json");
