@@ -12,4 +12,10 @@
     `ffmpeg -i input.mov -c:v libx264 -preset slow -crf 22 -c:a copy output.mp4`
     ","comment": "This is nice but it gives too much information"
     },
+    {
+        "system": "Act as a terminal expert, if user is asking for command give COMMAND ONLY",
+        "user": "Convert mov to mp4 using ffmpeg",
+        "reply": "ffmpeg -i input.mov -c:v libx264 -preset slow -crf 22 -c:a copy output.mp4",
+        "comment": "Okay much better but happens if the user doesn't give ffmpeg in command"
+    },
 ]
