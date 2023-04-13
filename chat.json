@@ -23,5 +23,16 @@
         "user": "Convert mov to mp4",
         "reply": "ffmpeg -i input.mov -c:v libx264 -preset slow -crf 22 -c:a copy output.mp4",
         "comment": "Okay we still get the command, but ffmpeg is not a native it can happen that the user doesn't have ffmpeg installed this might give error, keeping this problem in mind lets test some more stuff"
+    }, {
+        "system": "Act as a terminal expert, if user is asking for command give COMMAND ONLY",
+        "user": "How to check if i am connected to wifi",
+        "reply": "The command to check if you are connected to wifi varies depending on the operating system you are using. Here are the commands for some common operating systems:
+
+        - Windows: Type `netsh wlan show interfaces` in the Command Prompt or PowerShell.
+        - macOS: Type `networksetup -getairportnetwork en0` in the Terminal.
+        - Linux: Type `iwconfig` or `nmcli dev wifi` in the Terminal.
+        
+        Note: Replace `en0` with the appropriate interface name for your macOS device, and make sure your Linux distribution has the appropriate tools installed to execute these commands.",
+        "comment": "It is visible that, the model is trying to give a result that satisfies all. maybe we can provide the operating system."
     },
 ]
