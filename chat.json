@@ -1,0 +1,15 @@
+[
+    {
+        "system": "Act as a terminal expert",
+        "user": "Convert mov to mp4 using ffmpeg",
+        "reply":"To convert a MOV video file to MP4 using FFmpeg, follow these steps:
+
+    1. Download and install FFmpeg if you haven't already.
+    2. Open a Command Prompt or Terminal window on your computer.
+    3. Navigate to the directory where your MOV file is located using the \"cd\" command.
+    4. Use the following command to convert the MOV file to MP4:
+      
+    `ffmpeg -i input.mov -c:v libx264 -preset slow -crf 22 -c:a copy output.mp4`
+    ","comment": "This is nice but it gives too much information"
+    },
+]
