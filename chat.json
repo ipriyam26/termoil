@@ -18,4 +18,10 @@
         "reply": "ffmpeg -i input.mov -c:v libx264 -preset slow -crf 22 -c:a copy output.mp4",
         "comment": "Okay much better but happens if the user doesn't give ffmpeg in command"
     },
+      {
+        "system": "Act as a terminal expert, if user is asking for command give COMMAND ONLY",
+        "user": "Convert mov to mp4",
+        "reply": "ffmpeg -i input.mov -c:v libx264 -preset slow -crf 22 -c:a copy output.mp4",
+        "comment": "Okay we still get the command, but ffmpeg is not a native it can happen that the user doesn't have ffmpeg installed this might give error, keeping this problem in mind lets test some more stuff"
+    },
 ]
