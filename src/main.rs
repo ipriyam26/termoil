@@ -88,17 +88,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
             // if tokens is None make it 200 by default
             let tokens = tokens.unwrap_or(200);
             let client = Client::new();
-
+            // let operating_system = get_pretty_name().unwrap_or("Linux".to_owned());
 
             let url = "https://api.openai.com/v1/chat/completions";
 
-            let headers: HeaderMap<HeaderValue> = header::HeaderMap::from_iter(vec![
-                (header::CONTENT_TYPE, "application/json".parse().unwrap()),
-                (
-                    header::AUTHORIZATION,
-                    format!("Bearer {}", open_ai_api_key).parse().unwrap(),
-                ),
-            ]);
+
 
             let system_message = format!(
                 "Act as a terminal expert, answer should be the COMMAND ONLY, no need to explain. OS: {OS}",
@@ -123,7 +117,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             let response: ApiResponse = client
                 .post(url)
-                .headers(headers)
+                .headers(get_header())
                 .json(&body)
                 .send()
                 .await?
@@ -145,3 +139,14 @@ fn get_api_key() -> String {
 fn get_os() -> String {
     get_pretty_name().unwrap_or("Linux".to_owned())
 }
+
+fn get_header() -> HeaderMap<HeaderValue> {
+    header::HeaderMap::from_iter(vec![
+        (header::CONTENT_TYPE, "application/json".parse().unwrap()),
+        (
+            header::AUTHORIZATION,
+            format!("Bearer {}", get_api_key()).parse().unwrap(),
+        ),
+    ])
+}
+
