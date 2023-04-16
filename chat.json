@@ -41,4 +41,10 @@
         "reply": "ifconfig en0 | grep status | awk '{print $2}'",
         "comment": "Okay this looks great, lets figure out a way to find os in rust"
     },
+    {
+        "system": "Act as a terminal expert,  answer should be the COMMAND ONLY, no need to explain. OS: Macos",
+        "user": "Convert mov to mp4",
+        "reply": "ffmpeg -i input.mov -c:v libx264 -preset slow -crf 22 -c:a copy output.mp4",
+        "comment": "Okay we still get the command, but ffmpeg is not a native it can happen that the user doesn't have ffmpeg installed this might give error, it would be better if we could also provide all the user installed program in the system"
+    }
 ]

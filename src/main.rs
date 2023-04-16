@@ -1,6 +1,6 @@
 //NOTE - lets allow the user to provide max_tokens
 
-use clap::Parser;
+use clap::{command, Parser, Subcommand};
 
 use dotenv::dotenv;
 use reqwest::{
@@ -35,12 +35,19 @@ struct Message {
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    // query the user wants to enter
-    #[arg(short, long)]
-    query: String,
+    #[command(subcommand)]
+    command: Commands,
+}
 
-    #[arg(short, long)]
-    tokens: Option<u32>,
+#[derive(Subcommand, Debug)]
+enum Commands {
+    Config,
+    #[command(about = "Search for a command")]
+    Search {
+        query: String,
+        #[arg(short = 't')]
+        tokens: Option<u32>,
+    },
 }
 
 fn get_pretty_name() -> io::Result<String> {
@@ -74,53 +81,58 @@ async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
     let arguments = Args::parse();
     let open_ai_api_key = env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY not set");
-    let query = arguments.query.to_owned();
-    let tokens = arguments.tokens.unwrap_or(200).to_owned();
-    let client = Client::new();
-    let operating_system = get_pretty_name().unwrap_or("Linux".to_owned());
 
-    let url = "https://api.openai.com/v1/chat/completions";
+    match arguments.command {
+        Commands::Config => todo!(),
+        Commands::Search { tokens, query } => {
+            // if tokens is None make it 200 by default
+            let tokens = tokens.unwrap_or(200);
+            let client = Client::new();
+            let operating_system = get_pretty_name().unwrap_or("Linux".to_owned());
 
-    let headers: HeaderMap<HeaderValue> = header::HeaderMap::from_iter(vec![
-        (header::CONTENT_TYPE, "application/json".parse().unwrap()),
-        (
-            header::AUTHORIZATION,
-            format!("Bearer {}", open_ai_api_key).parse().unwrap(),
-        ),
-    ]);
+            let url = "https://api.openai.com/v1/chat/completions";
 
-    let system_message = format!(
-        "Act as a terminal expert, answer should be the COMMAND ONLY, no need to explain. OS: {OS}",
-        OS = operating_system
-    );
-    let body = json!(
-        {
-            "model":"gpt-3.5-turbo",
-            "messages":[
-                {"role": "system",
-                "content": system_message
-                },
-            {
-                "role":"user",
-                "content": query,
-            }
-            ],
-            "max_tokens": tokens,
+            let headers: HeaderMap<HeaderValue> = header::HeaderMap::from_iter(vec![
+                (header::CONTENT_TYPE, "application/json".parse().unwrap()),
+                (
+                    header::AUTHORIZATION,
+                    format!("Bearer {}", open_ai_api_key).parse().unwrap(),
+                ),
+            ]);
+
+            let system_message = format!(
+                "Act as a terminal expert, answer should be the COMMAND ONLY, no need to explain. OS: {OS}",
+                OS = operating_system
+            );
+            let body = json!(
+                {
+                    "model":"gpt-3.5-turbo",
+                    "messages":[
+                        {"role": "system",
+                        "content": system_message
+                        },
+                    {
+                        "role":"user",
+                        "content": query,
+                    }
+                    ],
+                    "max_tokens": tokens,
+                }
+            );
+            // println!("{:#?}", &system_message);
+
+            let response: ApiResponse = client
+                .post(url)
+                .headers(headers)
+                .json(&body)
+                .send()
+                .await?
+                .json()
+                .await?;
+
+            println!("{:?}", &response.choices[0]);
         }
-    );
-    // println!("{:#?}", &system_message);
-
-    let response: ApiResponse = client
-        .post(url)
-        .headers(headers)
-        .json(&body)
-        .send()
-        .await?
-        .json()
-        .await?;
-
-
-    println!("{}", &response.choices[0].message.content);
+    }
 
     Ok(())
     // println!("Query: {:?}", arguments.query);
