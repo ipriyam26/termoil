@@ -88,7 +88,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             // if tokens is None make it 200 by default
             let tokens = tokens.unwrap_or(200);
             let client = Client::new();
-            let operating_system = get_pretty_name().unwrap_or("Linux".to_owned());
+
 
             let url = "https://api.openai.com/v1/chat/completions";
 
@@ -102,7 +102,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             let system_message = format!(
                 "Act as a terminal expert, answer should be the COMMAND ONLY, no need to explain. OS: {OS}",
-                OS = operating_system
+                OS = get_os()
             );
             let body = json!(
                 {
@@ -119,7 +119,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     "max_tokens": tokens,
                 }
             );
-            // println!("{:#?}", &system_message);
+            println!("{:#?}", &system_message);
 
             let response: ApiResponse = client
                 .post(url)
@@ -136,4 +136,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     Ok(())
     // println!("Query: {:?}", arguments.query);
+}
+
+fn get_api_key() -> String {
+    env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY not set")
+}
+
+fn get_os() -> String {
+    get_pretty_name().unwrap_or("Linux".to_owned())
 }
