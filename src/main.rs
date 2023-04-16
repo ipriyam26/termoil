@@ -94,31 +94,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 
 
-            let system_message = format!(
-                "Act as a terminal expert, answer should be the COMMAND ONLY, no need to explain. OS: {OS}",
-                OS = get_os()
-            );
-            let body = json!(
-                {
-                    "model":"gpt-3.5-turbo",
-                    "messages":[
-                        {"role": "system",
-                        "content": system_message
-                        },
-                    {
-                        "role":"user",
-                        "content": query,
-                    }
-                    ],
-                    "max_tokens": tokens,
-                }
-            );
-            println!("{:#?}", &system_message);
-
             let response: ApiResponse = client
                 .post(url)
                 .headers(get_header())
-                .json(&body)
+                .json(&get_body(query, tokens))
                 .send()
                 .await?
                 .json()
@@ -148,5 +127,30 @@ fn get_header() -> HeaderMap<HeaderValue> {
             format!("Bearer {}", get_api_key()).parse().unwrap(),
         ),
     ])
+}
+
+fn get_system_message() -> String {
+    format!(
+        "Act as a terminal expert, answer should be the COMMAND ONLY, no need to explain. OS: {OS}",
+        OS = get_os()
+    )
+}
+
+fn get_body(query: String, tokens: u32) -> serde_json::Value {
+    json!(
+        {
+            "model":"gpt-3.5-turbo",
+            "messages":[
+                {"role": "system",
+                "content": get_system_message()
+                },
+            {
+                "role":"user",
+                "content": query,
+            }
+            ],
+            "max_tokens": tokens,
+        }
+    )
 }
 
