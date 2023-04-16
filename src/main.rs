@@ -80,29 +80,13 @@ fn get_pretty_name() -> io::Result<String> {
 async fn main() -> Result<(), Box<dyn Error>> {
     dotenv().ok();
     let arguments = Args::parse();
-    let open_ai_api_key = env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY not set");
 
     match arguments.command {
         Commands::Config => todo!(),
         Commands::Search { tokens, query } => {
             // if tokens is None make it 200 by default
             let tokens = tokens.unwrap_or(200);
-            let client = Client::new();
-            // let operating_system = get_pretty_name().unwrap_or("Linux".to_owned());
-
-            let url = "https://api.openai.com/v1/chat/completions";
-
-
-
-            let response: ApiResponse = client
-                .post(url)
-                .headers(get_header())
-                .json(&get_body(query, tokens))
-                .send()
-                .await?
-                .json()
-                .await?;
-
+            let response: ApiResponse = get_response(query, tokens).await?;
             println!("{:?}", &response.choices[0]);
         }
     }
@@ -154,3 +138,17 @@ fn get_body(query: String, tokens: u32) -> serde_json::Value {
     )
 }
 
+async fn get_response(query: String, tokens: u32) -> Result<ApiResponse, Box<dyn Error>> {
+    let client = Client::new();
+    let url = "https://api.openai.com/v1/chat/completions";
+    let response: ApiResponse = client
+        .post(url)
+        .headers(get_header())
+        .json(&get_body(query, tokens))
+        .send()
+        .await?
+        .json()
+        .await?;
+
+    Ok(response)
+}
