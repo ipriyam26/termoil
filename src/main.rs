@@ -41,7 +41,21 @@ struct Args {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
-    Config,
+    Config {
+        #[arg(short = 't')]
+        tokens: Option<u32>,
+        // supply manual info about the system commands
+        #[arg(short = 'm', long = "manual", group = "commands")]
+        manual_commands: Option<String>,
+
+        // automatically generate the system commands
+        #[arg(short = 'a', long = "auto", group = "commands")]
+        auto_commands: bool,
+
+        // display all the information about the system collected
+        #[arg(short = 'd', long = "display", group = "commands")]
+        display_commands: bool,
+    },
     #[command(about = "Search for a command")]
     Search {
         query: String,
@@ -82,12 +96,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let arguments = Args::parse();
 
     match arguments.command {
-        Commands::Config => todo!(),
+        Commands::Config {
+            tokens,
+            manual_commands,
+            auto_commands,
+            display_commands,
+        } => {
+            println!("Tokens: {:?}", tokens);
+            println!("Manual Commands: {:?}", manual_commands);
+            println!("Auto Commands: {:?}", auto_commands);
+            println!("Display Commands: {:?}", display_commands);
+        }
         Commands::Search { tokens, query } => {
-            // if tokens is None make it 200 by default
             let tokens = tokens.unwrap_or(200);
             let response: ApiResponse = get_response(query, tokens).await?;
-            println!("{:?}", &response.choices[0]);
+            println!("{:?}", &response.choices[0].message.content);
         }
     }
 
