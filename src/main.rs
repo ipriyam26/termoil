@@ -69,28 +69,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn handle_external_commands(command: &Instructions) {
+    let mut found_one = false;
     // check the list of external commands and if any of them is not installed, print the list of commands to install them
-    let external_installs = command
+    command
         .external_commands
         .iter()
         .enumerate()
-        .filter_map(|(index, tool)| {
-            let output = Command::new("which").arg(tool).output().unwrap();
-            if !output.status.success() {
-                command.external_install.get(index)
-            } else {
-                None
+        .for_each(|(index, tool)| {
+            let output = Command::new("which").arg(tool.trim()).output();
+            match output {
+                Ok(output) => {
+                    if !output.status.success() {
+                        if !found_one {
+                            println!("Run the following commands to install the required tools:");
+                            found_one = true;
+                        }
+                        println!("{}", command.external_install[index].to_string())
+                    }
+                }
+                Err(_) => {}
             }
-        })
-        .collect::<Vec<&String>>();
-    // print the list of commands to install the external dependencies
-    if external_installs.is_empty() {
-        return;
-    }
-    println!("Run the following commands to install the missing dependencies:");
-    for (index, install) in external_installs.iter().enumerate() {
-        println!("{index}. {command}", index = index + 1, command = install);
-    }
+        });
 }
 
 #[derive(Debug, Deserialize, Serialize)]
