@@ -1,7 +1,6 @@
 //NOTE - lets allow the user to provide max_tokens
 
 use clap::{command, Parser, Subcommand};
-
 use dotenv::dotenv;
 use reqwest::{
     header::{self, HeaderMap, HeaderValue},
@@ -102,10 +101,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
             auto_commands,
             display_commands,
         } => {
-            println!("Tokens: {:?}", tokens);
-            println!("Manual Commands: {:?}", manual_commands);
-            println!("Auto Commands: {:?}", auto_commands);
-            println!("Display Commands: {:?}", display_commands);
+            if manual_commands.is_some() {
+                env::set_var(
+                    "commands",
+                    manual_commands.expect("manual_commands is None"),
+                );
+            }
+            if auto_commands {
+                let commands = get_installed_commands();
+                env::set_var("commands", commands);
+            }
+            
         }
         Commands::Search { tokens, query } => {
             let tokens = tokens.unwrap_or(200);
@@ -118,8 +124,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // println!("Query: {:?}", arguments.query);
 }
 
+fn get_installed_commands() ->String {
+    "".to_owned()
+}
+
 fn get_api_key() -> String {
     env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY not set")
+}
+
+fn get_commands() -> String {
+    env::var("commands").unwrap_or("".to_owned())
+}
+
+fn get_default_tokens() -> u32 {
+    env::var("tokens")
+        .unwrap_or("200".to_owned())
+        .parse()
+        .expect("tokens should be a number")
 }
 
 fn get_os() -> String {
