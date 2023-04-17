@@ -41,19 +41,11 @@ struct Args {
 #[derive(Subcommand, Debug)]
 enum Commands {
     Config {
-        #[arg(short = 't')]
+        #[arg(short = 't', group = "commands")]
         tokens: Option<u32>,
-        // supply manual info about the system commands
-        #[arg(short = 'm', long = "manual", group = "commands")]
-        manual_commands: Option<String>,
-
-        // automatically generate the system commands
-        #[arg(short = 'a', long = "auto", group = "commands")]
-        auto_commands: bool,
-
         // display all the information about the system collected
         #[arg(short = 'd', long = "display", group = "commands")]
-        display_commands: bool,
+        display: bool,
     },
     #[command(about = "Search for a command")]
     Search {
@@ -95,26 +87,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let arguments = Args::parse();
 
     match arguments.command {
-        Commands::Config {
-            tokens,
-            manual_commands,
-            auto_commands,
-            display_commands,
-        } => {
+        Commands::Config { tokens, display } => {
             if tokens.is_some() {
                 env::set_var("tokens", tokens.unwrap().to_string());
             }
-            if manual_commands.is_some() {
-                env::set_var(
-                    "commands",
-                    manual_commands.expect("manual_commands is None"),
-                );
+            if display {
+                println!("OS: {}", get_os());
+                println!("Tokens: {}", get_default_tokens());
             }
-            if auto_commands {
-                let commands = get_installed_commands();
-                env::set_var("commands", commands);
-            }
-            
         }
         Commands::Search { tokens, query } => {
             let tokens = tokens.unwrap_or(get_default_tokens());
@@ -127,16 +107,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // println!("Query: {:?}", arguments.query);
 }
 
-fn get_installed_commands() ->String {
-    "".to_owned()
-}
-
 fn get_api_key() -> String {
     env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY not set")
-}
-
-fn get_commands() -> String {
-    env::var("commands").unwrap_or("".to_owned())
 }
 
 fn get_default_tokens() -> u32 {
