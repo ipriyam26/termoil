@@ -6,7 +6,7 @@ use reqwest::{
     header::{self, HeaderMap, HeaderValue},
     Client,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
     env::{self, consts::OS},
@@ -15,6 +15,51 @@ use std::{
     io::{self, BufRead},
     path::Path,
 };
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
+    dotenv().ok();
+    let arguments = Args::parse();
+
+    match arguments.command {
+        Commands::Config { tokens, display } => {
+            if tokens.is_some() {
+                env::set_var("tokens", tokens.unwrap().to_string());
+            }
+            if display {
+                println!("OS: {}", get_os());
+                println!("Tokens: {}", get_default_tokens());
+            }
+        }
+        Commands::Search { tokens, mut query } => {
+            let tokens = tokens.unwrap_or(get_default_tokens());
+            query = format!(
+                "{system}{query} using terminal OS: {OS}",
+                system = get_system_message(),
+                query = query,
+                OS = get_os()
+            );
+
+            let response: ApiResponse = get_response(query, tokens).await?;
+            let command: Instructions =
+                serde_json::from_str(&response.choices[0].message.content)
+                    .expect("Failed to parse response");
+            
+            println!("{:#?}", command.instruction_commands[0]);
+        }
+    }
+
+    Ok(())
+    // println!("Query: {:?}", arguments.query);
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct Instructions {
+    instruction_commands: Vec<String>,
+    external_commands: Vec<String>,
+    external_install: Vec<String>,
+    explanation: String,
+}
 
 #[derive(Debug, Deserialize)]
 struct ApiResponse {
@@ -81,39 +126,13 @@ fn get_pretty_name() -> io::Result<String> {
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
-    dotenv().ok();
-    let arguments = Args::parse();
-
-    match arguments.command {
-        Commands::Config { tokens, display } => {
-            if tokens.is_some() {
-                env::set_var("tokens", tokens.unwrap().to_string());
-            }
-            if display {
-                println!("OS: {}", get_os());
-                println!("Tokens: {}", get_default_tokens());
-            }
-        }
-        Commands::Search { tokens, query } => {
-            let tokens = tokens.unwrap_or(get_default_tokens());
-            let response: ApiResponse = get_response(query, tokens).await?;
-            println!("{:?}", &response.choices[0].message.content);
-        }
-    }
-
-    Ok(())
-    // println!("Query: {:?}", arguments.query);
-}
-
 fn get_api_key() -> String {
     env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY not set")
 }
 
 fn get_default_tokens() -> u32 {
     env::var("tokens")
-        .unwrap_or("200".to_owned())
+        .unwrap_or("350".to_owned())
         .parse()
         .expect("tokens should be a number")
 }
@@ -133,10 +152,22 @@ fn get_header() -> HeaderMap<HeaderValue> {
 }
 
 fn get_system_message() -> String {
-    format!(
-        "Act as a terminal expert, answer should be the COMMAND ONLY, no need to explain. OS: {OS}",
-        OS = get_os()
-    )
+    "Act as a smart terminal assistant API server, provide   help with general tasks you are allowed to use external dependencies, here is the example output format, output should be in JSON:\n
+    {
+    \"instruction_commands\": [\"ffmpeg -i input_video.mp4 -vn -acodec copy output_audio.m4a\"],
+    \"external_commands\": [\"ffmpeg\"],
+    \"external_install\": [\"sudo apt install ffmpeg\"],
+    \"explanation\": \"| Part | Description |\n| --- | --- |\n| Command | ffmpeg -i input_video.mp4 -vn -acodec copy output_audio.m4a |\n| ffmpeg | A command-line tool used for handling audio, video, and other multimedia files. |\n| -i input_video.mp4 | Specifies the input video file. |\n| -vn | Disables the video stream from the output. |\n| -acodec copy | Copies the audio stream from the input file to the output file without any re-encoding. |\n| output_audio.m4a | Specifies the output audio file. The format of the output audio file is determined by its extension, which in this case is .m4a. |\"
+    }
+    \n
+    The output should be a JSON object with the following fields:\n
+    instruction_commands: A list of commands that can be run to complete the task.\n
+    external_commands: A list of commands that are not built-in to the terminal, but are required to complete the task.\n
+    external_install: A list of commands that can be run to install the external commands.\n
+    explanation: A markdown table that explains the commands and their arguments.\n
+    \n
+    Here is your first task: 
+    ".to_owned()
 }
 
 fn get_body(query: String, tokens: u32) -> serde_json::Value {
@@ -144,9 +175,9 @@ fn get_body(query: String, tokens: u32) -> serde_json::Value {
         {
             "model":"gpt-3.5-turbo",
             "messages":[
-                {"role": "system",
-                "content": get_system_message()
-                },
+                // {"role": "system",
+                // "content": get_system_message()
+                // },
             {
                 "role":"user",
                 "content": query,
@@ -160,10 +191,11 @@ fn get_body(query: String, tokens: u32) -> serde_json::Value {
 async fn get_response(query: String, tokens: u32) -> Result<ApiResponse, Box<dyn Error>> {
     let client = Client::new();
     let url = "https://api.openai.com/v1/chat/completions";
+    let body = &get_body(query, tokens);
     let response: ApiResponse = client
         .post(url)
         .headers(get_header())
-        .json(&get_body(query, tokens))
+        .json(body)
         .send()
         .await?
         .json()
