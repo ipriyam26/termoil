@@ -41,31 +41,36 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 OS = get_os()
             );
 
-            let response: ApiResponse = get_response(query.clone(), tokens).await?;
-            let command: Result<Instructions, serde_json::Error> =
-                serde_json::from_str(&response.choices[0].message.content);
-
-            // match the command and if error is found send request again
-            match command {
-                Ok(command) => {
-                    handle_external_commands(&command);
-                    println!("{}", command.instruction_commands[0]);
-                }
-                Err(_) => {
-                    let response: ApiResponse = get_response(query, tokens).await?;
-                    let command: Instructions =
-                        serde_json::from_str(&response.choices[0].message.content).expect(
-                            "Error in parsing the response, Please try again with diffferent query",
-                        );
-                    handle_external_commands(&command);
-                    println!("{}", command.instruction_commands[0]);
-                }
-            }
-        } // println!("{:#?}", command.instruction_commands[0]);
+            handle_request(query, tokens).await?;
+        }
     }
 
     Ok(())
     // println!("Query: {:?}", arguments.query);
+}
+
+async fn handle_request(query: String, tokens: u32) -> Result<(), Box<dyn Error>> {
+    let mut command = None;
+    for _ in 0..3 {
+        let response: ApiResponse = get_response(query.clone(), tokens).await?;
+        if let Ok(parsed_command) =
+            serde_json::from_str::<Instructions>(&response.choices[0].message.content)
+        {
+            command = Some(parsed_command);
+            break;
+        }
+    }
+
+    match command {
+        Some(command) => {
+            handle_external_commands(&command);
+            println!("{}", command.instruction_commands[0]);
+        }
+        None => {
+            println!("Error in parsing the response, Please try again with a different query");
+        }
+    }
+    Ok(())
 }
 
 fn handle_external_commands(command: &Instructions) {
@@ -84,8 +89,15 @@ fn handle_external_commands(command: &Instructions) {
                             println!("Run the following commands to install the required tools:");
                             found_one = true;
                         }
-                        println!("{}", command.external_install[index].to_string())
+                        println!(
+                            "{}",
+                            command
+                                .external_install
+                                .get(index)
+                                .expect("Index out of bounds")
+                        );
                     }
+                    
                 }
                 Err(_) => {}
             }
