@@ -101,6 +101,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
             auto_commands,
             display_commands,
         } => {
+            if tokens.is_some() {
+                env::set_var("tokens", tokens.unwrap().to_string());
+            }
             if manual_commands.is_some() {
                 env::set_var(
                     "commands",
@@ -114,7 +117,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             
         }
         Commands::Search { tokens, query } => {
-            let tokens = tokens.unwrap_or(200);
+            let tokens = tokens.unwrap_or(get_default_tokens());
             let response: ApiResponse = get_response(query, tokens).await?;
             println!("{:?}", &response.choices[0].message.content);
         }
