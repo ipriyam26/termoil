@@ -1,4 +1,4 @@
-//NOTE - lets allow the user to provide max_tokens
+//NOTE - Even though in tests its working correctly, Its possible that the response maybe not in format as expected so we will resend the request again
 
 use clap::{command, Parser, Subcommand};
 use dotenv::dotenv;
@@ -14,6 +14,7 @@ use std::{
     fs::File,
     io::{self, BufRead},
     path::Path,
+    process::Command,
 };
 
 #[tokio::main]
@@ -40,17 +41,56 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 OS = get_os()
             );
 
-            let response: ApiResponse = get_response(query, tokens).await?;
-            let command: Instructions =
-                serde_json::from_str(&response.choices[0].message.content)
-                    .expect("Failed to parse response");
-            
-            println!("{:#?}", command.instruction_commands[0]);
-        }
+            let response: ApiResponse = get_response(query.clone(), tokens).await?;
+            let command: Result<Instructions, serde_json::Error> =
+                serde_json::from_str(&response.choices[0].message.content);
+
+            // match the command and if error is found send request again
+            match command {
+                Ok(command) => {
+                    handle_external_commands(&command);
+                    println!("{}", command.instruction_commands[0]);
+                }
+                Err(_) => {
+                    let response: ApiResponse = get_response(query, tokens).await?;
+                    let command: Instructions =
+                        serde_json::from_str(&response.choices[0].message.content).expect(
+                            "Error in parsing the response, Please try again with diffferent query",
+                        );
+                    handle_external_commands(&command);
+                    println!("{}", command.instruction_commands[0]);
+                }
+            }
+        } // println!("{:#?}", command.instruction_commands[0]);
     }
 
     Ok(())
     // println!("Query: {:?}", arguments.query);
+}
+
+fn handle_external_commands(command: &Instructions) {
+    // check the list of external commands and if any of them is not installed, print the list of commands to install them
+    let external_installs = command
+        .external_commands
+        .iter()
+        .enumerate()
+        .filter_map(|(index, tool)| {
+            let output = Command::new("which").arg(tool).output().unwrap();
+            if !output.status.success() {
+                command.external_install.get(index)
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<&String>>();
+    // print the list of commands to install the external dependencies
+    if external_installs.is_empty() {
+        return;
+    }
+    println!("Run the following commands to install the missing dependencies:");
+    for (index, install) in external_installs.iter().enumerate() {
+        println!("{index}. {command}", index = index + 1, command = install);
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize)]
