@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug with Args",
+            "program": "${workspaceRoot}/target/debug/${workspaceRootFolderName}",
+            "args": "${input:args}",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "cargo build",
+            "sourceLanguages": [
+                "rust"
+            ]
+        },
+        // Your existing configuration
+    ],
+    "inputs": [
+        {
+            "id": "args",
+            "type": "promptString",
+            "description": "Enter command line arguments (space-separated)"
+        }
+    ]
+}

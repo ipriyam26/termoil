@@ -1,6 +1,7 @@
 //NOTE - Even though in tests its working correctly, Its possible that the response maybe not in format as expected so we will resend the request again
-
-use clap::{command, Parser, Subcommand};
+mod cli;
+use clap::Parser;
+use cli::{Args, Commands};
 use dotenv::dotenv;
 use reqwest::{
     header::{self, HeaderMap, HeaderValue},
@@ -11,8 +12,8 @@ use serde_json::json;
 use std::{
     env::{self, consts::OS},
     error::Error,
-    fs::File,
-    io::{self, BufRead},
+    fs::{File, OpenOptions},
+    io::{self, BufRead, Write},
     path::Path,
     process::Command,
 };
@@ -25,7 +26,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
     match arguments.command {
         Commands::Config { tokens, display } => {
             if tokens.is_some() {
-                env::set_var("tokens", tokens.unwrap().to_string());
+                // store the tokens in the .env file that is created by the dotenv crate
+                OpenOptions::new()
+                    .append(true)
+                    .open(".env")?
+                    .write_all(format!("TOKENS={}", tokens.unwrap()).as_bytes())?;
             }
             if display {
                 println!("OS: {}", get_os());
@@ -82,24 +87,20 @@ fn handle_external_commands(command: &Instructions) {
         .enumerate()
         .for_each(|(index, tool)| {
             let output = Command::new("which").arg(tool.trim()).output();
-            match output {
-                Ok(output) => {
-                    if !output.status.success() {
-                        if !found_one {
-                            println!("Run the following commands to install the required tools:");
-                            found_one = true;
-                        }
-                        println!(
-                            "{}",
-                            command
-                                .external_install
-                                .get(index)
-                                .expect("Index out of bounds")
-                        );
+            if let Ok(output) = output {
+                if !output.status.success() {
+                    if !found_one {
+                        println!("Run the following commands to install the required tools:");
+                        found_one = true;
                     }
-                    
+                    println!(
+                        "{}",
+                        command
+                            .external_install
+                            .get(index)
+                            .expect("Index out of bounds")
+                    );
                 }
-                Err(_) => {}
             }
         });
 }
@@ -127,35 +128,12 @@ struct Message {
     content: String,
 }
 
-#[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand, Debug)]
-enum Commands {
-    Config {
-        #[arg(short = 't', group = "commands")]
-        tokens: Option<u32>,
-        // display all the information about the system collected
-        #[arg(short = 'd', long = "display", group = "commands")]
-        display: bool,
-    },
-    #[command(about = "Search for a command")]
-    Search {
-        query: String,
-        #[arg(short = 't')]
-        tokens: Option<u32>,
-    },
-}
 
 fn get_pretty_name() -> io::Result<String> {
     match OS {
         "linux" => {
             let os_release_path = Path::new("/etc/os-release");
-            let file = File::open(&os_release_path)?;
+            let file = File::open(os_release_path)?;
             let reader = io::BufReader::new(file);
             for line in reader.lines() {
                 let line = line?;
@@ -182,7 +160,7 @@ fn get_api_key() -> String {
 }
 
 fn get_default_tokens() -> u32 {
-    env::var("tokens")
+    env::var("TOKENS")
         .unwrap_or("350".to_owned())
         .parse()
         .expect("tokens should be a number")
