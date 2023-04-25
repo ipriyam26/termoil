@@ -1,14 +1,12 @@
 //NOTE - Even though in tests its working correctly, Its possible that the response maybe not in format as expected so we will resend the request again
+mod api;
 mod cli;
+use api::{get_response, ApiResponse};
 use clap::Parser;
 use cli::{Args, Commands};
 use dotenv::dotenv;
-use reqwest::{
-    header::{self, HeaderMap, HeaderValue},
-    Client,
-};
+
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::{
     env::{self, consts::OS},
     error::Error,
@@ -113,22 +111,6 @@ struct Instructions {
     explanation: String,
 }
 
-#[derive(Debug, Deserialize)]
-struct ApiResponse {
-    choices: Vec<Choice>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Choice {
-    message: Message,
-}
-
-#[derive(Debug, Deserialize)]
-struct Message {
-    content: String,
-}
-
-
 fn get_pretty_name() -> io::Result<String> {
     match OS {
         "linux" => {
@@ -155,10 +137,6 @@ fn get_pretty_name() -> io::Result<String> {
     }
 }
 
-fn get_api_key() -> String {
-    env::var("OPEN_AI_API_KEY").expect("OPEN_AI_API_KEY not set")
-}
-
 fn get_default_tokens() -> u32 {
     env::var("TOKENS")
         .unwrap_or("350".to_owned())
@@ -168,16 +146,6 @@ fn get_default_tokens() -> u32 {
 
 fn get_os() -> String {
     get_pretty_name().unwrap_or("Linux".to_owned())
-}
-
-fn get_header() -> HeaderMap<HeaderValue> {
-    header::HeaderMap::from_iter(vec![
-        (header::CONTENT_TYPE, "application/json".parse().unwrap()),
-        (
-            header::AUTHORIZATION,
-            format!("Bearer {}", get_api_key()).parse().unwrap(),
-        ),
-    ])
 }
 
 fn get_system_message() -> String {
@@ -197,38 +165,4 @@ fn get_system_message() -> String {
     \n
     Here is your first task: 
     ".to_owned()
-}
-
-fn get_body(query: String, tokens: u32) -> serde_json::Value {
-    json!(
-        {
-            "model":"gpt-3.5-turbo",
-            "messages":[
-                // {"role": "system",
-                // "content": get_system_message()
-                // },
-            {
-                "role":"user",
-                "content": query,
-            }
-            ],
-            "max_tokens": tokens,
-        }
-    )
-}
-
-async fn get_response(query: String, tokens: u32) -> Result<ApiResponse, Box<dyn Error>> {
-    let client = Client::new();
-    let url = "https://api.openai.com/v1/chat/completions";
-    let body = &get_body(query, tokens);
-    let response: ApiResponse = client
-        .post(url)
-        .headers(get_header())
-        .json(body)
-        .send()
-        .await?
-        .json()
-        .await?;
-
-    Ok(response)
 }
