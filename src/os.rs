@@ -1,4 +1,10 @@
-use std::{env::{self, consts::OS}, fs::File, io, io::BufRead, path::Path};
+use std::{
+    env::{self, consts::OS},
+    fs::File,
+    io,
+    io::BufRead,
+    path::Path,
+};
 
 pub fn get_os() -> String {
     get_pretty_name().unwrap_or("Linux".to_owned())

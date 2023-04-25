@@ -1,13 +1,10 @@
-
 use clap::{command, Parser, Subcommand};
-
-
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
-  pub  command: Commands,
+    pub command: Commands,
 }
 
 #[derive(Subcommand, Debug)]

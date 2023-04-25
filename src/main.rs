@@ -1,8 +1,7 @@
-//NOTE - Even though in tests its working correctly, Its possible that the response maybe not in format as expected so we will resend the request again
 mod api;
 mod cli;
-mod os;
 mod command;
+mod os;
 use api::{get_response, ApiResponse};
 use clap::Parser;
 use cli::{Args, Commands};
@@ -10,13 +9,12 @@ use command::Instructions;
 use dotenv::dotenv;
 
 use os::get_system_message;
-use std::{
-    error::Error,
-    fs::{OpenOptions},
-    io::{Write},
-};
+use std::{error::Error, fs::OpenOptions, io::Write};
 
-use crate::{os::{get_os, get_default_tokens}, command::handle_external_commands};
+use crate::{
+    command::handle_external_commands,
+    os::{get_default_tokens, get_os},
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -77,5 +75,3 @@ async fn handle_request(query: String, tokens: u32) -> Result<(), Box<dyn Error>
     }
     Ok(())
 }
-
-
