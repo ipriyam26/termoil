@@ -2,21 +2,21 @@
 mod api;
 mod cli;
 mod os;
+mod command;
 use api::{get_response, ApiResponse};
 use clap::Parser;
 use cli::{Args, Commands};
+use command::Instructions;
 use dotenv::dotenv;
 
 use os::get_system_message;
-use serde::{Deserialize, Serialize};
 use std::{
     error::Error,
     fs::{OpenOptions},
     io::{Write},
-    process::Command,
 };
 
-use crate::os::{get_os, get_default_tokens};
+use crate::{os::{get_os, get_default_tokens}, command::handle_external_commands};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -76,41 +76,6 @@ async fn handle_request(query: String, tokens: u32) -> Result<(), Box<dyn Error>
         }
     }
     Ok(())
-}
-
-fn handle_external_commands(command: &Instructions) {
-    let mut found_one = false;
-    // check the list of external commands and if any of them is not installed, print the list of commands to install them
-    command
-        .external_commands
-        .iter()
-        .enumerate()
-        .for_each(|(index, tool)| {
-            let output = Command::new("which").arg(tool.trim()).output();
-            if let Ok(output) = output {
-                if !output.status.success() {
-                    if !found_one {
-                        println!("Run the following commands to install the required tools:");
-                        found_one = true;
-                    }
-                    println!(
-                        "{}",
-                        command
-                            .external_install
-                            .get(index)
-                            .expect("Index out of bounds")
-                    );
-                }
-            }
-        });
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct Instructions {
-    instruction_commands: Vec<String>,
-    external_commands: Vec<String>,
-    external_install: Vec<String>,
-    explanation: String,
 }
 
 
